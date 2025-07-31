@@ -1,17 +1,25 @@
 
+import { db } from '../db';
+import { callLogsTable } from '../db/schema';
 import { type LogCallInput, type CallLog } from '../schema';
 
 export const logCall = async (input: LogCallInput): Promise<CallLog> => {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is logging a call record for history.
-  // Should save call details including duration and status.
-  return Promise.resolve({
-    id: 0,
-    caller_id: input.caller_id,
-    receiver_id: input.receiver_id,
-    call_type: input.call_type,
-    status: input.status,
-    duration: input.duration,
-    created_at: new Date()
-  } as CallLog);
+  try {
+    // Insert call log record
+    const result = await db.insert(callLogsTable)
+      .values({
+        caller_id: input.caller_id,
+        receiver_id: input.receiver_id,
+        call_type: input.call_type,
+        status: input.status,
+        duration: input.duration // Integer column - no conversion needed
+      })
+      .returning()
+      .execute();
+
+    return result[0];
+  } catch (error) {
+    console.error('Call logging failed:', error);
+    throw error;
+  }
 };

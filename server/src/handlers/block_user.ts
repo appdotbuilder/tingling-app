@@ -1,14 +1,39 @@
 
+import { db } from '../db';
+import { blockedUsersTable, friendshipsTable } from '../db/schema';
 import { type BlockUserInput, type BlockedUser } from '../schema';
+import { eq, or, and } from 'drizzle-orm';
 
 export const blockUser = async (input: BlockUserInput): Promise<BlockedUser> => {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is blocking a user.
-  // Should remove friendship if exists and add to blocked list.
-  return Promise.resolve({
-    id: 0,
-    blocker_id: input.blocker_id,
-    blocked_id: input.blocked_id,
-    created_at: new Date()
-  } as BlockedUser);
+  try {
+    // First, remove any existing friendship between the users
+    await db.delete(friendshipsTable)
+      .where(
+        or(
+          and(
+            eq(friendshipsTable.user1_id, input.blocker_id),
+            eq(friendshipsTable.user2_id, input.blocked_id)
+          ),
+          and(
+            eq(friendshipsTable.user1_id, input.blocked_id),
+            eq(friendshipsTable.user2_id, input.blocker_id)
+          )
+        )
+      )
+      .execute();
+
+    // Add the user to the blocked list
+    const result = await db.insert(blockedUsersTable)
+      .values({
+        blocker_id: input.blocker_id,
+        blocked_id: input.blocked_id
+      })
+      .returning()
+      .execute();
+
+    return result[0];
+  } catch (error) {
+    console.error('Block user failed:', error);
+    throw error;
+  }
 };

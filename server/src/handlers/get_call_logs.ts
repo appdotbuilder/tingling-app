@@ -1,9 +1,25 @@
 
+import { db } from '../db';
+import { callLogsTable } from '../db/schema';
 import { type CallLog } from '../schema';
+import { eq, or, desc } from 'drizzle-orm';
 
 export const getCallLogs = async (userId: string): Promise<CallLog[]> => {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is fetching call history for a user.
-  // Should return calls where user was either caller or receiver, ordered by date.
-  return Promise.resolve([]);
+  try {
+    const results = await db.select()
+      .from(callLogsTable)
+      .where(
+        or(
+          eq(callLogsTable.caller_id, userId),
+          eq(callLogsTable.receiver_id, userId)
+        )
+      )
+      .orderBy(desc(callLogsTable.created_at))
+      .execute();
+
+    return results;
+  } catch (error) {
+    console.error('Failed to fetch call logs:', error);
+    throw error;
+  }
 };
